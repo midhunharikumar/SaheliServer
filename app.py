@@ -19,6 +19,10 @@ if st.sidebar.checkbox("View Customers"):
     users = requests.get(url + '/showcustomers/').json()
 
     st.write(pandas.DataFrame(users))
+if st.sidebar.checkbox("Show Jobs"):
+
+    jobs = requests.get(url + '/showjobs/').json()
+    st.write(pandas.DataFrame(jobs))
 
 
 first_name = st.text_input("FirstName")

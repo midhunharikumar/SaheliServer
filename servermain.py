@@ -4,8 +4,10 @@ import os
 from dbconnector import MongoConnector
 import pandas as pd
 import utils
+import json
 app = FastAPI()
-mgc = MongoConnector('10.0.0.102:27017')
+mgc = MongoConnector('localhost', 'saheli-prime', 'customer_info')
+mgc_jobs = MongoConnector('localhost', 'jobs_db', 'scheduled')
 
 
 @app.post("/files/")
@@ -25,7 +27,6 @@ async def create_upload_file(file: UploadFile=File(...)):
 
 @app.post("/addcustomer/")
 async def create_customer(details: str):
-    print(details)
     dict_data = json.loads(details)
     print(dict_data)
     return "Its not caching period"
@@ -33,10 +34,16 @@ async def create_customer(details: str):
 
 @app.get("/showcustomers/")
 async def show_customers():
-    customers = mgc.get_all_customer()
+    customers = mgc.get_all()
     #customers = pd.DataFrame(customers)
     # print(customers)
     return customers
+
+
+@app.get("/showjobs/")
+async def show_jobs():
+    jobs = mgc_jobs.get_all()
+    return jobs
 
 
 @app.get("/health")

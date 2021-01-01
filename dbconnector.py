@@ -13,25 +13,26 @@ class MongoConnector:
 
     def __init__(self, clientURL, base_db_key, sub_db_key):
         self.client = pymongo.MongoClient()
-        self.base_database_key = base_db_key =  # 'saheli-prime'
+        self.base_database_key = base_db_key  # 'saheli-prime'
         self.sub_database_key = sub_db_key  # 'customer_info'
 
     def add_item(self, customer):
-        return self.client[self.base_database_key][self.customer_database_key].insert_one(customer)
+        print(customer)
+        return self.client[self.base_database_key][self.sub_database_key].insert_one(customer)
 
     def find_item(self, customer):
-        db = self.client[self.base_database_key][self.customer_database_key]
+        db = self.client[self.base_database_key][self.sub_database_key]
         mydoc = db.find(customer)
         for x in mydoc:
             print(x)
         return []
 
     def delete_item(self, customer):
-        db = self.client[self.base_database_key][self.customer_database_key]
+        db = self.client[self.base_database_key][self.sub_database_key]
         db.delete_many(customer)
 
     def get_all(self):
-        db = self.client[self.base_database_key][self.customer_database_key]
+        db = self.client[self.base_database_key][self.sub_database_key]
         return list(db.find({}))
 
 
@@ -39,7 +40,8 @@ class Job:
 
     def __init__(self, customer_id: str, service_id: str):
         #(TODO) investigate if UUID is the best way to handle this.
-        self.job_id = str(uuid.uuid4())[:5]
+        self._id = str(uuid.uuid4())[:5]
+        self.job_id = self._id
         self.service_id = service_id
         self.customer_id = customer_id
         self.date = datetime.datetime.now()
@@ -47,11 +49,12 @@ class Job:
         self.expiry = self.date + datetime.timedelta(days=1)
 
     def serialize(self):
-        serial = dict("job_id": self.job_id,
-                      "service_id": self.service_id,
-                      "customer_id": self.customer_id,
-                      "date": self.date,
-                      "expiry": self.expiry)
+        serial = {"_id": self.job_id,
+                  "job_id": self.job_id,
+                  "service_id": self.service_id,
+                  "customer_id": self.customer_id,
+                  "date": self.date,
+                  "expiry": self.expiry}
         return serial
 
 
@@ -59,9 +62,10 @@ class JobDBConnector(MongoConnector):
     ''' Base class that connects to MongoDB'''
 
     def __init__(self, base_db_key, sub_db_key):
-        super(self).__init__(base_db_key, sub_db_key)
+        super().__init__(self, base_db_key, sub_db_key)
 
     def add(self, job):
+        print(job.serialize())
         self.add_item(job.serialize())
 
     def get(self):
@@ -75,7 +79,6 @@ class JobScheduler:
     def __init__(self):
         self.dbconnector = JobDBConnector('jobs_db', 'scheduled')
 
-    @classmethod
     def create(self, job):
         self.dbconnector.add(job)
 
@@ -90,7 +93,17 @@ class JobEnumerator:
         return jobs
 
 
-class Provider:
+class User:
+
+    def __init__(self):
+        self.first_name = None
+        self.last_name = None
+        self.address = None
+        self.phone = None
+        self.pincode = None
+
+
+class Provider(User):
 
     def __init__(self,
                  id_image,
@@ -102,9 +115,9 @@ class Provider:
         self._id = str(uuid.uuid4()) if _id == None else _id
         self.id_image = id_image
         self.face_image = face_image
-        self.service_id = service_id
-        self.location = location,
-        self.cellphone = cellphone,
+        self.service_id = service_id_list
+        self.location = location
+        self.cellphone = cellphone
 
     @classmethod
     def fromdict(cls, datadict):
@@ -122,14 +135,14 @@ class Provider:
                     "service_id": self.address,
                     "location": self.pincode,
                     "cellphone": self.cellphone,
-                    "creation_date": datetime.timestamp(self.creation_date)}
+                    "creation_date": datetime.datetime.timestamp(self.creation_date)}
         for key, value in dict(out_dict).items():
             if value is None:
                 del out_dict[key]
         return out_dict
 
 
-class Customer:
+class Customer(User):
 
     def __init__(self,
                  first_name,
@@ -156,7 +169,7 @@ class Customer:
                       datadict.get('pincode', None),
                       datadict.get('email', None),
                       datadict.get('cellphone', None),
-                      datadict.get('_id', None))
+                      datadict.get('_id', str(uuid.uuid4())))
         return in_dict
 
     def serialize(self):
@@ -182,8 +195,6 @@ class MongoDatabaseOrchestrator:
 
 if __name__ == '__main__':
     print('Hello')
-    mgc = MongoConnector("random")
-    customer = Customer("Donald", "Duck", "Some location",
-                        93993, "donald@duck.com", 1991993993)
-    mgc.add_customer(customer.serialize())
-    print(mgc.get_all_customer())
+    mgc = MongoConnector('random', 'saheli-prime', 'customer_info')
+    print(mgc.client.database_names())
+    print(mgc.get_all())
