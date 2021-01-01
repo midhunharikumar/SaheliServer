@@ -94,7 +94,7 @@ class Customer:
 class MongoConnector:
 
     def __init__(self, clientURL):
-        self.client = pymongo.MongoClient(clientURL)
+        self.client = pymongo.MongoClient()
         self.base_database_key = 'saheli-prime'
         self.customer_database_key = 'customer_info'
 
@@ -115,3 +115,11 @@ class MongoConnector:
     def get_all_customer(self):
         db = self.client[self.base_database_key][self.customer_database_key]
         return list(db.find({}))
+
+
+if __name__ == '__main__':
+    print('Hello')
+    mgc = MongoConnector("random")
+    customer = Customer("Donald","Duck","Some location",93993,"donald@duck.com",1991993993)
+    mgc.add_customer(customer.serialize())
+    print(mgc.get_all_customer())
