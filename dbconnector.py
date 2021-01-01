@@ -5,6 +5,89 @@
 from datetime import datetime
 import uuid
 import pymongo
+import datetime
+
+
+class MongoConnector:
+    #(TODO) refactor all the customer code here
+
+    def __init__(self, clientURL, base_db_key, sub_db_key):
+        self.client = pymongo.MongoClient()
+        self.base_database_key = base_db_key =  # 'saheli-prime'
+        self.sub_database_key = sub_db_key  # 'customer_info'
+
+    def add_item(self, customer):
+        return self.client[self.base_database_key][self.customer_database_key].insert_one(customer)
+
+    def find_item(self, customer):
+        db = self.client[self.base_database_key][self.customer_database_key]
+        mydoc = db.find(customer)
+        for x in mydoc:
+            print(x)
+        return []
+
+    def delete_item(self, customer):
+        db = self.client[self.base_database_key][self.customer_database_key]
+        db.delete_many(customer)
+
+    def get_all(self):
+        db = self.client[self.base_database_key][self.customer_database_key]
+        return list(db.find({}))
+
+
+class Job:
+
+    def __init__(self, customer_id: str, service_id: str):
+        #(TODO) investigate if UUID is the best way to handle this.
+        self.job_id = str(uuid.uuid4())[:5]
+        self.service_id = service_id
+        self.customer_id = customer_id
+        self.date = datetime.datetime.now()
+        # Add a time delta for expiration
+        self.expiry = self.date + datetime.timedelta(days=1)
+
+    def serialize(self):
+        serial = dict("job_id": self.job_id,
+                      "service_id": self.service_id,
+                      "customer_id": self.customer_id,
+                      "date": self.date,
+                      "expiry": self.expiry)
+        return serial
+
+
+class JobDBConnector(MongoConnector):
+    ''' Base class that connects to MongoDB'''
+
+    def __init__(self, base_db_key, sub_db_key):
+        super(self).__init__(base_db_key, sub_db_key)
+
+    def add(self, job):
+        self.add_item(job.serialize())
+
+    def get(self):
+        return self.get_all()
+
+
+class JobScheduler:
+    ''' Class defines and creates new jobs and adds them to the DB.
+        (TODO) Make async '''
+
+    def __init__(self):
+        self.dbconnector = JobDBConnector('jobs_db', 'scheduled')
+
+    @classmethod
+    def create(self, job):
+        self.dbconnector.add(job)
+
+
+class JobEnumerator:
+
+    def __init__(self):
+        self.dbconnector = JobDBConnector('jobs_db', 'scheduler')
+
+    def get_jobs(self):
+        jobs = self.dbconnector.get_all()
+        return jobs
 
 
 class Provider:
@@ -91,35 +174,16 @@ class Customer:
         return out_dict
 
 
-class MongoConnector:
+class MongoDatabaseOrchestrator:
 
     def __init__(self, clientURL):
         self.client = pymongo.MongoClient()
-        self.base_database_key = 'saheli-prime'
-        self.customer_database_key = 'customer_info'
-
-    def add_customer(self, customer):
-        return self.client[self.base_database_key][self.customer_database_key].insert_one(customer)
-
-    def find_customer(self, customer):
-        db = self.client[self.base_database_key][self.customer_database_key]
-        mydoc = db.find(customer)
-        for x in mydoc:
-            print(x)
-        return []
-
-    def delete_customer(self, customer):
-        db = self.client[self.base_database_key][self.customer_database_key]
-        db.delete_many(customer)
-
-    def get_all_customer(self):
-        db = self.client[self.base_database_key][self.customer_database_key]
-        return list(db.find({}))
 
 
 if __name__ == '__main__':
     print('Hello')
     mgc = MongoConnector("random")
-    customer = Customer("Donald","Duck","Some location",93993,"donald@duck.com",1991993993)
+    customer = Customer("Donald", "Duck", "Some location",
+                        93993, "donald@duck.com", 1991993993)
     mgc.add_customer(customer.serialize())
     print(mgc.get_all_customer())
