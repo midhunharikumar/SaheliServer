@@ -38,23 +38,30 @@ class MongoConnector:
 
 class Job:
 
-    def __init__(self, customer_id: str, service_id: str):
+    def __init__(self,
+                 customer_id: str,
+                 service_id: str,
+                 schedule_slot: tuple):
         #(TODO) investigate if UUID is the best way to handle this.
         self._id = str(uuid.uuid4())[:5]
         self.job_id = self._id
         self.service_id = service_id
         self.customer_id = customer_id
-        self.date = datetime.datetime.now()
+        self.submit_time = datetime.datetime.now()
         # Add a time delta for expiration
-        self.expiry = self.date + datetime.timedelta(days=1)
+        self.expiry_time = self.submit_time + datetime.timedelta(days=1)
+        self.schedule_start = schedule_slot[0]
+        self.schedule_stop = schedule_slot[1]
 
     def serialize(self):
         serial = {"_id": self.job_id,
                   "job_id": self.job_id,
                   "service_id": self.service_id,
                   "customer_id": self.customer_id,
-                  "date": self.date,
-                  "expiry": self.expiry}
+                  "submit_time": self.submit_time,
+                  "expiry_time": self.expiry_time,
+                  "schedule_start": self.schedule_start,
+                  "schedule_stop": self.schedule_stop}
         return serial
 
 
@@ -86,7 +93,7 @@ class JobScheduler:
 class JobEnumerator:
 
     def __init__(self):
-        self.dbconnector = JobDBConnector('jobs_db', 'scheduler')
+        self.dbconnector = JobDBConnector('jobs_db', 'scheduled')
 
     def get_jobs(self):
         jobs = self.dbconnector.get_all()

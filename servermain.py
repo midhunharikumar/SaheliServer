@@ -1,13 +1,15 @@
 from fastapi import FastAPI, File, UploadFile
 import tempfile
 import os
-from dbconnector import MongoConnector
+from dbconnector import MongoConnector, JobScheduler, JobEnumerator
 import pandas as pd
 import utils
 import json
 app = FastAPI()
 mgc = MongoConnector('localhost', 'saheli-prime', 'customer_info')
-mgc_jobs = MongoConnector('localhost', 'jobs_db', 'scheduled')
+#mgc_jobs = MongoConnector('localhost', 'jobs_db', 'scheduled')
+jobsenum = JobEnumerator()
+scheduler = JobScheduler()
 
 
 @app.post("/files/")
@@ -35,14 +37,19 @@ async def create_customer(details: str):
 @app.get("/showcustomers/")
 async def show_customers():
     customers = mgc.get_all()
-    #customers = pd.DataFrame(customers)
+    # customers = pd.DataFrame(customers)
     # print(customers)
     return customers
 
 
+@app.post("/schedulejob/")
+async def schedulejob(job):
+    scheduler.create(job)
+
+
 @app.get("/showjobs/")
 async def show_jobs():
-    jobs = mgc_jobs.get_all()
+    jobs = jobsenum.get_jobs()
     return jobs
 
 

@@ -1,7 +1,7 @@
 import pymongo
 from dbconnector import Job, JobScheduler, MongoConnector
 import random
-
+from utils import get_fake_date_time
 
 scheduler = JobScheduler()
 
@@ -18,7 +18,10 @@ def schedule_jobs(num_jobs=10):
         customer = get_random_customer()
         service_id = "a1311"
         print(customer['_id'])
-        job = Job(str(customer['_id']), service_id)
+        time_duration = get_fake_date_time()
+        job = Job(str(customer['_id']),
+                  service_id,
+                  time_duration)
         scheduler.create(job)
 
 
