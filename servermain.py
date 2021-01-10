@@ -5,6 +5,13 @@ from dbconnector import MongoConnector, JobScheduler, JobEnumerator
 import pandas as pd
 import utils
 import json
+import logging
+
+
+LOG = logging.getLogger('simple_example')
+LOG.setLevel(logging.DEBUG)
+
+
 app = FastAPI()
 mgc = MongoConnector('localhost', 'saheli-prime', 'customer_info')
 #mgc_jobs = MongoConnector('localhost', 'jobs_db', 'scheduled')
@@ -19,9 +26,10 @@ async def create_file(file: bytes=File(...)):
 
 @app.post("/uploadfile/")
 async def create_upload_file(file: UploadFile=File(...)):
+    LOG.info("File upload invoked")
     extension = os.path.splitext(file.filename)[1]
     _, path = tempfile.mkstemp(prefix='parser_', suffix=extension)
-    print(path)
+    LOG.info("tmp file at: {}".format(path))
     with open(path, 'wb') as f:
         f.write(file.file.read())
     return {"filename": file.filename, "path": path}
@@ -29,6 +37,7 @@ async def create_upload_file(file: UploadFile=File(...)):
 
 @app.post("/addcustomer/")
 async def create_customer(details: str):
+    LOG.info('Add customer invoked !')
     dict_data = json.loads(details)
     print(dict_data)
     return "Its not caching period"
@@ -44,11 +53,18 @@ async def show_customers():
 
 @app.post("/schedulejob/")
 async def schedulejob(job):
+    LOG.info('scheduling a Job')
     scheduler.create(job)
+
+
+@app.post("/claimjob/")
+async def schedulejob(job):
+    LOG.info('Claiming job')
 
 
 @app.get("/showjobs/")
 async def show_jobs():
+    LOG.info('Showing Jobs')
     jobs = jobsenum.get_jobs()
     return jobs
 

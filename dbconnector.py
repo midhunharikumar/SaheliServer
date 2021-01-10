@@ -35,6 +35,10 @@ class MongoConnector:
         db = self.client[self.base_database_key][self.sub_database_key]
         return list(db.find({}))
 
+    def update_item(self, filter, query):
+        db = self.client[self.base_database_key][self.sub_database_key]
+        db.updatOne(filter, query)
+
 
 class Job:
 
@@ -52,6 +56,8 @@ class Job:
         self.expiry_time = self.submit_time + datetime.timedelta(days=1)
         self.schedule_start = schedule_slot[0]
         self.schedule_stop = schedule_slot[1]
+        self.claim_status = False
+        self.claim_provider = None
 
     def serialize(self):
         serial = {"_id": self.job_id,
@@ -61,7 +67,9 @@ class Job:
                   "submit_time": self.submit_time,
                   "expiry_time": self.expiry_time,
                   "schedule_start": self.schedule_start,
-                  "schedule_stop": self.schedule_stop}
+                  "schedule_stop": self.schedule_stop,
+                  "claim_status": self.claim_status,
+                  "claim_provider": self.claim_provider}
         return serial
 
 
@@ -78,6 +86,9 @@ class JobDBConnector(MongoConnector):
     def get(self):
         return self.get_all()
 
+    def update(self):
+        pass
+
 
 class JobScheduler:
     ''' Class defines and creates new jobs and adds them to the DB.
@@ -88,6 +99,9 @@ class JobScheduler:
 
     def create(self, job):
         self.dbconnector.add(job)
+
+    def update(self, job):
+        self.dbconnector.update(job)
 
 
 class JobEnumerator:
