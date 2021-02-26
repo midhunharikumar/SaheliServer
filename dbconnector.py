@@ -31,13 +31,13 @@ class MongoConnector:
         db = self.client[self.base_database_key][self.sub_database_key]
         db.delete_many(customer)
 
-    def get_all(self):
+    def get_all(self, filter={}):
         db = self.client[self.base_database_key][self.sub_database_key]
-        return list(db.find({}))
+        return list(db.find(filter))
 
-    def update_item(self, filter, query):
+    def update_item(self, filter_mongo, query):
         db = self.client[self.base_database_key][self.sub_database_key]
-        db.updatOne(filter, query)
+        db.update(filter_mongo, {"$set": query})
 
 
 class Job:
@@ -83,10 +83,11 @@ class JobDBConnector(MongoConnector):
         print(job.serialize())
         self.add_item(job.serialize())
 
-    def get(self):
-        return self.get_all()
+    def get(self, query_filter):
+        return self.get_all(query_filter)
 
-    def update(self):
+    def update(self, filter_mongo, packet):
+        self.update_item(filter_mongo, packet)
         pass
 
 
@@ -100,8 +101,8 @@ class JobScheduler:
     def create(self, job):
         self.dbconnector.add(job)
 
-    def update(self, job):
-        self.dbconnector.update(job)
+    def update(self, job, update_packet):
+        self.dbconnector.update(job, update_packet)
 
 
 class JobEnumerator:
@@ -109,8 +110,8 @@ class JobEnumerator:
     def __init__(self):
         self.dbconnector = JobDBConnector('jobs_db', 'scheduled')
 
-    def get_jobs(self):
-        jobs = self.dbconnector.get_all()
+    def get_jobs(self, filter={"claim_status": False}):
+        jobs = self.dbconnector.get_all(filter)
         return jobs
 
 

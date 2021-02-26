@@ -1,7 +1,7 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Form
 import tempfile
 import os
-from dbconnector import MongoConnector, JobScheduler, JobEnumerator
+from dbconnector import MongoConnector, JobScheduler, JobEnumerator, Job
 import pandas as pd
 import utils
 import json
@@ -57,8 +57,10 @@ async def schedulejob(job):
     scheduler.create(job)
 
 
-@app.post("/claimjob/")
-async def schedulejob(job):
+@app.post("/claim_job/")
+async def claim_job(job_id: str=Form(...), provider_id: str=Form(...)):
+    scheduler.update({"_id": job_id}, {"claim_status": True,
+                                       "claim_provider": provider_id})
     LOG.info('Claiming job')
 
 
